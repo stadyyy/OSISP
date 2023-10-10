@@ -1,0 +1,4 @@
+﻿  TextEditor.cpp
+C:\Users\stadi\source\repos\TextEditor\TextEditor\resource.h(8,1): warning C4005: IDM_HELP_ABOUT: изменение макроопределения
+C:\Users\stadi\source\repos\TextEditor\TextEditor\resource.h(4,1): message : см. предыдущее определение "IDM_HELP_ABOUT"
+  TextEditor.vcxproj -> C:\Users\stadi\source\repos\TextEditor\x64\Debug\TextEditor.exe

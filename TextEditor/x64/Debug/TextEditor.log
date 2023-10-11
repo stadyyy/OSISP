@@ -1,4 +1,7 @@
 ﻿  TextEditor.cpp
 C:\Users\stadi\source\repos\TextEditor\TextEditor\resource.h(8,1): warning C4005: IDM_HELP_ABOUT: изменение макроопределения
 C:\Users\stadi\source\repos\TextEditor\TextEditor\resource.h(4,1): message : см. предыдущее определение "IDM_HELP_ABOUT"
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\Richedit.h(109,1): warning C4005: EM_GETSELTEXT: изменение макроопределения
+C:\Users\stadi\source\repos\TextEditor\TextEditor\resource.h(16,1): message : см. предыдущее определение "EM_GETSELTEXT"
+C:\Users\stadi\source\repos\TextEditor\TextEditor\TextEditor.cpp(353,16): warning C4244: инициализация: преобразование "WPARAM" в "int", возможна потеря данных
   TextEditor.vcxproj -> C:\Users\stadi\source\repos\TextEditor\x64\Debug\TextEditor.exe

@@ -1,5 +1,6 @@
 #include <windows.h>
 #include "resource.h"
+#include <Richedit.h>
 
 HINSTANCE hInst; // Дескриптор текущего экземпляра приложения
 HWND hMainWnd;   // Дескриптор главного окна
@@ -7,6 +8,7 @@ HWND hEdit;      // Дескриптор элемента управления EDIT (текстовое поле)
 HMENU hMenu;     // Дескриптор меню приложения
 
 static WCHAR szFileName[MAX_PATH] = L""; // Объявляем глобально имя файла
+
 
 // Прототипы функций
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -32,7 +34,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     ShowWindow(hMainWnd, nCmdShow);
     UpdateWindow(hMainWnd);
+    
+    RegisterHotKey(hMainWnd, HOTKEY_CTRL_S, MOD_CONTROL, 'S');
+    RegisterHotKey(hMainWnd, HOTKEY_CTRL_O, MOD_CONTROL, 'O');
+    RegisterHotKey(hMainWnd, HOTKEY_CTRL_SHIFT_S, MOD_CONTROL | MOD_SHIFT, 'S');
 
+     
     // Создание меню
     hMenu = CreateMenu();
     HMENU hFileMenu = CreateMenu();
@@ -51,6 +58,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     AppendMenu(hEditMenu, MF_STRING, IDM_EDIT_PASTE, L"Paste");
     AppendMenu(hEditMenu, MF_STRING, IDM_EDIT_CUT, L"Cut");
     AppendMenu(hEditMenu, MF_STRING, IDM_EDIT_SELECTALL, L"Select All");
+
+    // Меню "Styles"
+    HMENU hStylesMenu = CreateMenu();
+    AppendMenu(hStylesMenu, MF_STRING, IDM_CHANGE_BG, L"Background Color");
+    AppendMenu(hStylesMenu, MF_STRING, IDM_SETFONT, L"Font Styles");
+    AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hStylesMenu, L"Styles");
 
     // Добавляем меню "Help" в главное меню
     AppendMenu(hMenu, MF_STRING, IDM_HELP_ABOUT, L"Help");
@@ -78,13 +91,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_CREATE:
     {
+        LoadLibrary(TEXT("Msftedit.dll"));
         hEdit = CreateWindowEx(
             WS_EX_CLIENTEDGE,
-            L"EDIT",
+            MSFTEDIT_CLASS,
             NULL,
             WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL,
             0, 0, 800, 600,
-            hWnd,  
+            hWnd,
             (HMENU)IDC_TEXT_EDIT,
             hInst,
             NULL);
@@ -242,6 +256,70 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
 
 
+            case IDM_CHANGE_BG:
+            {
+                // Используем диалог выбора цвета
+                CHOOSECOLOR cc;
+                static COLORREF customColors[16];
+
+                ZeroMemory(&cc, sizeof(CHOOSECOLOR));
+                cc.lStructSize = sizeof(CHOOSECOLOR);
+                cc.hwndOwner = hWnd;
+                cc.lpCustColors = customColors;
+                cc.rgbResult = RGB(255, 255, 255);  // Начальный цвет фона (белый)
+                cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+                if (ChooseColor(&cc))
+                {
+                    // Устанавливаем цвет фона в элементе управления Rich Edit
+                    SendMessage(hEdit, EM_SETBKGNDCOLOR, 0, cc.rgbResult);
+                }
+            }
+            break;
+            case IDM_SETFONT:
+            {
+                CHOOSEFONT cf;
+                LOGFONT lf;
+
+                // Инициализация структуры CHOOSEFONT
+                ZeroMemory(&cf, sizeof(CHOOSEFONT));
+                cf.lStructSize = sizeof(CHOOSEFONT);
+                cf.hwndOwner = hWnd;
+                cf.lpLogFont = &lf;
+                cf.rgbColors = RGB(0, 0, 0);  // Начальный цвет текста (черный)
+                cf.Flags = CF_EFFECTS | CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT | CF_NOFACESEL;
+
+                // Инициализация структуры LOGFONT
+                ZeroMemory(&lf, sizeof(LOGFONT));
+                lf.lfHeight = 12;  // Начальный размер шрифта
+                wcscpy_s(lf.lfFaceName, LF_FACESIZE, L"Arial");  // Начальное имя шрифта
+
+                // Отображение диалога выбора шрифта и цвета
+                if (ChooseFont(&cf))
+                {
+                    // Создание нового шрифта на основе выбранных параметров
+                    HFONT hFont = CreateFontIndirect(&lf);
+
+                    if (hFont)
+                    {
+                        // Устанавливаем новый шрифт в элементе управления Rich Edit
+                        SendMessage(hEdit, WM_SETFONT, (WPARAM)hFont, TRUE);
+
+                        // Создаем CHARFORMAT2 для установки цвета текста
+                        CHARFORMAT2 cf2;
+                        memset(&cf2, 0, sizeof(CHARFORMAT2));
+                        cf2.cbSize = sizeof(CHARFORMAT2);
+                        cf2.dwMask = CFM_COLOR;
+                        cf2.crTextColor = cf.rgbColors;  // Устанавливаем выбранный цвет
+
+                        // Устанавливаем цвет текста в элементе управления
+                        SendMessage(hEdit, EM_SETCHARFORMAT, SCF_ALL, (LPARAM)&cf2);
+                    }
+                }
+            }
+            break;
+
+
             case IDM_HELP_ABOUT:
                 // Обработка пункта меню "About"
                 MessageBox(hWnd, L"Text Editor v1.0\n\n© by Stas", L"About", MB_ICONINFORMATION | MB_OK);
@@ -251,6 +329,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
 
         }
+
+
+
         else if (wmId == IDC_TEXT_EDIT && wmEvent == EN_UPDATE)
         {
             // Обработка изменений в текстовом поле
@@ -267,7 +348,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     break;
 
-    
+    case WM_HOTKEY:
+    {
+        int id = wParam;
+        switch (id)
+        {
+        case HOTKEY_CTRL_O:
+            SendMessage(hWnd, WM_COMMAND, IDM_FILE_OPEN, 0);
+            break;
+        case HOTKEY_CTRL_S:
+            SendMessage(hWnd, WM_COMMAND, IDM_FILE_SAVE, 0);
+            break;
+        case HOTKEY_CTRL_SHIFT_S:
+            SendMessage(hWnd, WM_COMMAND, IDM_FILE_SAVEAS, 0);
+            break;
+        }
+    }
+    break;
 
     case WM_PAINT:
     {

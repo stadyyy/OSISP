@@ -15,3 +15,9 @@
 #define IDM_EDIT_SELECTALL 3006
 #define EM_GETSELTEXT 3007
 
+#define IDM_CHANGE_BG 101
+#define IDM_SETFONT   102
+
+#define HOTKEY_CTRL_S       1
+#define HOTKEY_CTRL_O       2
+#define HOTKEY_CTRL_SHIFT_S 3
